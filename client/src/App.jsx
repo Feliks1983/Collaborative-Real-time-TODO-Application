@@ -14,12 +14,10 @@ export default function App() {
   const [error, setError] = useState(null);
   const [isConnected, setConnected] = useState(socket.connected);
   const [message, setMessages] = useState([]);
-
+console.log(setConnected);
 
   useEffect(() => {
-
     fetchTasks();
-
   }, []);
 
   const fetchTasks = async () => {

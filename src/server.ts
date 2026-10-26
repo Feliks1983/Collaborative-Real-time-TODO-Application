@@ -76,78 +76,28 @@ export const connectDB = async (
   await Todo.syncIndexes();
 };
 
-io.on('connection', async socket => {
+
+io.on('connection', socket => {
   console.log('🟢 Socket подключён:', socket.id);
 
+  // Регистрируем обработчики задач, комнат и присутствия.
   configureSocket(io, socket);
 
   const broadcastPageCount = () => {
-    io.emit('presence:update', io.of('/').sockets.size);
+    io.emit('pages:count', io.of('/').sockets.size);
   };
 
   broadcastPageCount();
 
-  socket.on('disconnect', async reason => {
+  socket.on('disconnect', reason => {
     console.log('🔴 Socket отключён:', socket.id, reason);
+    broadcastPageCount();
 
-    setImmediate(broadcastPageCount);
-
-    const userId = socket.data.userId;
-
-    if (!userId || !mongoose.isValidObjectId(userId)) {
-      return;
-    }
-
-    const workspace = socket.data.workspace;
-
-    if (workspace) {
-      void leaveWorkspace(io, socket, workspace);
-    }
-
-    try {
-      const updated = await User.findByIdAndUpdate(
-        userId,
-        { lastSeen: new Date() },
-        { returnDocument: 'after' }
-      );
-
-      if (updated) {
-        io.emit('user-offline', {
-          userId,
-          username: updated.username,
-          lastSeen: updated.lastSeen,
-        });
-      }
-    } catch (error) {
-      console.error('Ошибка при обновлении статуса пользователя:', error);
-    }
+    // Присутствие очищается в обработчике disconnect
+    // внутри configureSocket. Повторно leaveWorkspace не вызываем.
   });
-
-  const userId = socket.data.userId;
-
-  try {
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { lastSeen: new Date() },
-      { returnDocument: 'after' }
-    );
-
-    if (!user) {
-      console.warn('Пользователь не найден:', userId);
-      return; 
-    }
-
-    socket.data.username = user.username;
-
-    io.emit('user-online', {
-      userId,
-      username: user.username,
-      lastSeen: user.lastSeen,
-    });
-  } catch (error) {
-    console.error('Ошибка загрузки пользователя:', error);
-  }
 });
+
 
 httpServer.listen(config.port, async () => {
   await connectDB();

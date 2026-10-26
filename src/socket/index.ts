@@ -37,6 +37,7 @@ type ChatSocket = Socket & {
   data: {
     userId?: string;
     username?: string;
+    workspace?: string;
   };
 };
 
@@ -77,7 +78,7 @@ export async function leaveWorkspace(io: Server, socket: ChatSocket, workspace: 
   }
 }
 
-export function configureSocket(io: Server, socket: ChatSocket): void {
+export async function configureSocket(io: Server, socket: ChatSocket) {
   socket.on(
     'workspace:join',
     async ({
@@ -89,6 +90,13 @@ export function configureSocket(io: Server, socket: ChatSocket): void {
     } = {}) => {
       if (workspace !== 'default') return;
 
+      console.log('WORKSPACE JOIN', {
+        socketId: socket.id,
+        workspace,
+        online: workspaceUsers.get(workspace)?.size,
+        users: [...(workspaceUsers.get(workspace)?.values() ?? [])],
+      });
+
       if (socket.data.workspace === workspace) {
         return;
       }
@@ -96,7 +104,7 @@ export function configureSocket(io: Server, socket: ChatSocket): void {
       const previousWorkspace = socket.data.workspace;
 
       if (previousWorkspace && previousWorkspace !== workspace) {
-        leaveWorkspace(io, socket, previousWorkspace);
+        await leaveWorkspace(io, socket, previousWorkspace);
       }
 
       const room = `workspace:${workspace}`;
@@ -280,6 +288,14 @@ export function configureSocket(io: Server, socket: ChatSocket): void {
 
   socket.on('todo task', msg => {
     io.emit('todo task', msg);
+  });
+
+  socket.on('disconnect', () => {
+    const workspace = socket.data.workspace;
+
+    if (workspace) {
+      void leaveWorkspace(io, socket, workspace);
+    }
   });
 }
 

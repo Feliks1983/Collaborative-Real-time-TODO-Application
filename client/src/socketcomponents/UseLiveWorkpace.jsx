@@ -42,17 +42,19 @@ export const UseLiveWorkspace = (setTasks, username = 'Guest') => {
       setTasks(previous => previous.filter(item => String(item._id ?? item.id) !== String(id)));
     };
 
+
     socket.on('connect', joinWorkspace);
     socket.on('presence:update', onPresence);
     socket.on('todo:created', onCreated);
     socket.on('todo:updated', onUpdated);
     socket.on('todo:deleted', onDeleted);
 
-    if (!socket.connected) {
-      socket.connect();
-    } else {
-      joinWorkspace();
-    }
+         if (!socket.connected) {
+           socket.connect();
+         } else {
+           joinWorkspace();
+         }
+
 
     return () => {
       socket.off('connect', joinWorkspace);
@@ -60,7 +62,6 @@ export const UseLiveWorkspace = (setTasks, username = 'Guest') => {
       socket.off('todo:created', onCreated);
       socket.off('todo:updated', onUpdated);
       socket.off('todo:deleted', onDeleted);
-      socket.disconnect();
     };
   }, [setTasks, username]);
 
