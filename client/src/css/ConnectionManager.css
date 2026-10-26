@@ -1,0 +1,24 @@
+.connection-manager{
+  display: flex;
+  justify-content: space-between;
+  width: 180px;
+  height: 30px;
+  padding: 10px;
+  font: 1em sans-serif;
+}
+
+.btn-left {
+  width: 80px;
+  height: 30px;
+  background: greenyellow;
+}
+
+.btn-right {
+  width: 80px;
+  height: 30px;
+  background: rgb(119, 125, 178);
+}
+
+.connection-state{
+  padding: 10px;
+}
