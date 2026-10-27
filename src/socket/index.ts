@@ -277,7 +277,9 @@ export async function configureSocket(io: Server, socket: ChatSocket) {
         return;
       }
 
-      io.to('workspace:default').emit('todo:deleted', { id });
+      io.to('workspace:default').emit('todo:deleted', {
+        id: String(id),
+      });
     } catch (error) {
       console.error('Socket todo:delete error:', error);
       socket.emit('todo:error', {

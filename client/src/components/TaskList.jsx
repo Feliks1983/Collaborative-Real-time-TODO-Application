@@ -13,7 +13,7 @@ export default function TaskList({
     <ul className="todo-list">
       {tasks.map(task => (
         <Task
-          key={task.id}
+          key={String(task._id ?? task.id)}
           task={task}
           onToggle={onToggle}
           onDelete={onDelete}

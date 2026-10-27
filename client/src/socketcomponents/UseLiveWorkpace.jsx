@@ -4,6 +4,7 @@ import { socket } from '../socket/socket';
 export const UseLiveWorkspace = (setTasks, username = 'Guest') => {
   const [online, setOnline] = useState(0);
   const [users, setUsers] = useState([]);
+  const getTaskId = task => String(task?._id ?? task?.id ?? '');
 
   useEffect(() => {
     const joinWorkspace = () => {
@@ -21,27 +22,44 @@ export const UseLiveWorkspace = (setTasks, username = 'Guest') => {
     };
 
     const onCreated = todo => {
-      setTasks(previous => {
-        const exists = previous.some(
-          item => String(item._id ?? item.id) === String(todo._id ?? todo.id)
-        );
+      const newId = getTaskId(todo);
 
-        return exists ? previous : [todo, ...previous];
+      if (!newId) {
+        console.warn('У задачи отсутствует id:', todo);
+        return;
+      }
+
+      setTasks(previous => {
+        const exists = previous.some(task => getTaskId(task) === newId);
+
+        if (exists) {
+          return previous;
+        }
+
+        return [todo, ...previous];
       });
     };
 
-    const onUpdated = todo => {
-      setTasks(previous =>
-        previous.map(item =>
-          String(item._id ?? item.id) === String(todo._id ?? todo.id) ? todo : item
-        )
-      );
-    };
+ const onUpdated = todo => {
+   const updatedId = String(todo?.id ?? todo?._id ?? '');
+
+   console.log('Получено todo:updated:', {
+     id: updatedId,
+     completed: todo?.completed,
+   });
+
+   if (!updatedId) return;
+
+   setTasks(previous =>
+     previous.map(task =>
+       String(task?.id ?? task?._id ?? '') === updatedId ? { ...task, ...todo } : task
+     )
+   );
+ };
 
     const onDeleted = ({ id }) => {
       setTasks(previous => previous.filter(item => String(item._id ?? item.id) !== String(id)));
     };
-
 
     socket.on('connect', joinWorkspace);
     socket.on('presence:update', onPresence);
@@ -49,12 +67,11 @@ export const UseLiveWorkspace = (setTasks, username = 'Guest') => {
     socket.on('todo:updated', onUpdated);
     socket.on('todo:deleted', onDeleted);
 
-         if (!socket.connected) {
-           socket.connect();
-         } else {
-           joinWorkspace();
-         }
-
+    if (!socket.connected) {
+      socket.connect();
+    } else {
+      joinWorkspace();
+    }
 
     return () => {
       socket.off('connect', joinWorkspace);
@@ -66,6 +83,4 @@ export const UseLiveWorkspace = (setTasks, username = 'Guest') => {
   }, [setTasks, username]);
 
   return { online, users };
-}
-
-
+};

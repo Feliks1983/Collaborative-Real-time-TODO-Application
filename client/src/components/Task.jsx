@@ -42,8 +42,8 @@ export default function Task({ task, onToggle, onDelete, onSave, message, setMes
           className="toggle"
           defaultValue={message}
           type="checkbox"
-          defaultChecked={task.completed}
-          onChange={() => onToggle(task.id)}
+          checked={Boolean(task.completed)}
+          onChange={() => onToggle(task.id ?? task._id)}
         />
         <label onDoubleClick={startEditing}>
           <span className="description">{task.text}</span>
@@ -60,7 +60,7 @@ export default function Task({ task, onToggle, onDelete, onSave, message, setMes
         <button className="icon icon-edit" onClick={startEditing} aria-label="Edit task"></button>
         <button
           className="icon icon-destroy"
-          onClick={() => onDelete(task.id)}
+          onClick={() => onDelete(task._id ?? task.id)}
           aria-label="Delete task"
         ></button>
       </div>

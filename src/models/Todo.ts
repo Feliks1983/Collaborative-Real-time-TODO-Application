@@ -27,7 +27,7 @@ export interface UpdateTodoInput {
   completed?: boolean;
   category?: string;
   dueDate?: string;
-  tags: string[];
+  tags?: string[];
 }
 
 export interface TodoQuery {
@@ -235,7 +235,7 @@ export const updateTodo = async (id: string, input: UpdateTodoInput): Promise<IT
   if (Object.keys($set).length) update.$set = $set;
   if (Object.keys($unset).length) update.$unset = $unset;
 
-  const doc = await Todo.findByIdAndUpdate(id, update, { new: true, runValidators: true });
+  const doc = await Todo.findByIdAndUpdate(id, update, { returnDocument: 'after', runValidators: true });
   return doc ? toITodo(doc) : null;
 };
 

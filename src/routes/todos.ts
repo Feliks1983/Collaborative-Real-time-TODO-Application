@@ -19,6 +19,12 @@ function broadcastAfterSuccess(
     const originalJson = res.json.bind(res);
 
     res.json = ((body: any) => {
+      if (event === 'todo:updated') {
+        console.log('📡 PATCH/PUT response:', {
+          status: res.statusCode,
+          body,
+        });
+      }
       if (res.statusCode >= 200 && res.statusCode < 300) {
         if (event === 'todo:deleted') {
           io.to('workspace:default').emit(event, {

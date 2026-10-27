@@ -14,11 +14,12 @@ export default function App() {
   const [error, setError] = useState(null);
   const [isConnected, setConnected] = useState(socket.connected);
   const [message, setMessages] = useState([]);
-console.log(setConnected);
 
   useEffect(() => {
     fetchTasks();
   }, []);
+
+  const getTaskId = task => String(task?._id ?? task?.id ?? '');
 
   const fetchTasks = async () => {
     try {
@@ -44,77 +45,64 @@ console.log(setConnected);
     }
   };
 
-  async function handleChangeTask(id) {
-    if (id === undefined || id === null || id === '') {
-      console.error('ОШИБКА: ID задачи отсутствует');
-      return;
-    }
-    try {
-      const task = todoList.find(task => task.id === id);
-      if (!task) {
-        console.error('Задача не найдена:', id);
-        return;
-      }
-      const response = await fetch(`${API_URL}/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          completed: !task.completed,
-        }),
-      });
-      const text = await response.text();
+const handleChangeTask = async id => {
+  const task = todoList.find(item => getTaskId(item) === String(id));
 
-      if (!response.ok) {
-        throw new Error(`Ошибка обновления: ${response.status} ${text}`);
-      }
-      let result = null;
-
-      if (text) {
-        try {
-          result = JSON.parse(text);
-        } catch {
-          result = null;
-        }
-      }
-      const updatedTask = result?.data ?? result ?? null;
-      setTodoList(tasks =>
-        tasks.map(task => {
-          if (task.id !== id) {
-            return task;
-          }
-          return {
-            ...task,
-            ...(updatedTask || {}),
-            completed: updatedTask?.completed ?? !task.completed,
-          };
-        })
-      );
-    } catch (error) {
-      console.error('Ошибка изменения:', error);
-    }
+  if (!task) {
+    console.error('Задача не найдена:', id);
+    return;
   }
 
-  async function handleDeleteTask(id) {
-    if (id === undefined || id === null || id === '') {
-      console.error('ОШИБКА: невозможно удалить задачу без ID');
-      return;
-    }
-    try {
-      const response = await fetch(`${API_URL}/${id}`, {
-        method: 'DELETE',
-      });
-      const text = await response.text();
+  const nextCompleted = !task.completed;
 
-      if (!response.ok) {
-        throw new Error(`Ошибка удаления: ${response.status} ${text}`);
-      }
-      setTodoList(tasks => tasks.filter(task => task.id !== id));
-    } catch (err) {
-      console.error('Ошибка удаления:', err);
+  try {
+    const response = await fetch(`${API_URL}/${encodeURIComponent(String(id))}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ completed: nextCompleted }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Не удалось обновить задачу');
     }
+
+    const updatedTask = result?.data?.todo ?? result?.data ?? result;
+
+    console.log('Ответ PATCH:', updatedTask);
+
+    setTodoList(previous =>
+      previous.map(item =>
+        getTaskId(item) === getTaskId(updatedTask) ? { ...item, ...updatedTask } : item
+      )
+    );
+  } catch (error) {
+    console.error('Ошибка обновления задачи:', error);
   }
+}
+
+ async function handleDeleteTask(id) {
+   if (id === undefined || id === null || id === '') {
+     console.error('ID задачи отсутствует');
+     return;
+   }
+
+   try {
+     const response = await fetch(`${API_URL}/${encodeURIComponent(String(id))}`, {
+       method: 'DELETE',
+     });
+
+     if (!response.ok) {
+       const text = await response.text();
+       throw new Error(`Ошибка удаления: ${response.status} ${text}`);
+     }
+
+     setTodoList(previous => previous.filter(task => getTaskId(task) !== String(id)));
+   } catch (error) {
+     console.error('Ошибка удаления:', error);
+   }
+ }
 
   async function saveTask(id, newText) {
     if (id === undefined || id === null || id === '') {
@@ -158,20 +146,19 @@ console.log(setConnected);
           result = null;
         }
       }
-      const updatedTask = result?.data ?? result ?? null;
-      setTodoList(prevTasks =>
-        prevTasks.map(task => {
-          if (task.id !== id) {
-            return task;
-          }
+      const updatedTask = result?.data?.todo ?? result?.data ?? result;
 
-          return {
-            ...task,
-            ...(updatedTask || {}),
-            text: updatedTask?.text ?? newText,
-            isEditing: false,
-          };
-        })
+      setTodoList(prevTasks =>
+        prevTasks.map(task =>
+          getTaskId(task) === String(id)
+            ? {
+                ...task,
+                ...updatedTask,
+                text: updatedTask?.text ?? newText,
+                isEditing: false,
+              }
+            : task
+        )
       );
     } catch (err) {
       console.error('Ошибка редактирования:', err);
@@ -219,12 +206,16 @@ console.log(setConnected);
         console.error('Ошибка создания задачи:', result);
         return;
       }
-      const newTask = result?.data ?? result;
-      if (!newTask?.id) {
-        console.error('Сервер не вернул ID задачи:', result);
-        return;
-      }
-      setTodoList(prev => [...prev, newTask]);
+     const newTask = result?.data ?? result;
+     const newId = String(newTask?._id ?? newTask?.id ?? '');
+
+     if (newId) {
+       setTodoList(previous => {
+         const exists = previous.some(task => String(task?._id ?? task?.id ?? '') === newId);
+
+         return exists ? previous : [newTask, ...previous];
+       });
+     }
     } catch (error) {
       console.error('Ошибка добавления задачи:', error);
     }

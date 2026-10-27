@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from 'express';
 import { isValidObjectId } from 'mongoose';
 import {
   getTodos,
@@ -7,30 +7,21 @@ import {
   updateTodo as updateTodoService,
   deleteTodo as deleteTodoService,
   getStats,
-} from "../models/Todo";
+} from '../models/Todo';
 
-export const getAllTodos = async(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+export const getAllTodos = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const offset = Number(req.query.offset) || 1;
     const limit = Number(req.query.limit) || 10;
 
     const completed =
-      req.query.completed !== undefined
-        ? req.query.completed === "true"
-        : undefined;
+      req.query.completed !== undefined ? req.query.completed === 'true' : undefined;
 
-    const search =
-      typeof req.query.search === "string" ? req.query.search : undefined;
+    const search = typeof req.query.search === 'string' ? req.query.search : undefined;
 
-    const category =
-      typeof req.query.category === "string" ? req.query.category : undefined;
+    const category = typeof req.query.category === 'string' ? req.query.category : undefined;
 
-    const sort =
-      typeof req.query.sort === "string" ? req.query.sort : undefined;
+    const sort = typeof req.query.sort === 'string' ? req.query.sort : undefined;
 
     const result = await getTodos({
       offset,
@@ -51,11 +42,7 @@ export const getAllTodos = async(
   }
 };
 
-export const getTodoById = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+export const getTodoById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = String(req.params.id);
 
@@ -71,7 +58,7 @@ export const getTodoById = async (
     if (!todo) {
       return res.status(404).json({
         success: false,
-        error: "Todo not found",
+        error: 'Todo not found',
       });
     }
 
@@ -94,7 +81,7 @@ export const createTodo = async (req: Request, res: Response, next: NextFunction
     return res.status(201).json({
       success: true,
       data: todo,
-      message: "Todo created successfully",
+      message: 'Todo created successfully',
     });
   } catch (error) {
     next(error);
@@ -124,7 +111,7 @@ export const updateTodo = async (req: Request, res: Response, next: NextFunction
     if (!todo) {
       return res.status(404).json({
         success: false,
-        error: "Todo not found",
+        error: 'Todo not found',
       });
     }
 
@@ -138,21 +125,16 @@ export const updateTodo = async (req: Request, res: Response, next: NextFunction
 };
 
 export const patchTodo = async (req: Request, res: Response, next: NextFunction) => {
+  
   try {
-    const fields = [
-      "title",
-      "description",
-      "completed",
-      "category",
-      "dueDate",
-    ];
+    const fields = ['text', 'title', 'description', 'completed', 'category', 'dueDate', 'tags'];
 
-    const hasFields = fields.some((field) => req.body[field] !== undefined);
+    const hasFields = fields.some(field => req.body[field] !== undefined);
 
     if (!hasFields) {
       return res.status(400).json({
         success: false,
-        error: "At least one field is required",
+        error: 'At least one field is required',
       });
     }
 
@@ -164,7 +146,10 @@ export const patchTodo = async (req: Request, res: Response, next: NextFunction)
         error: 'Invalid todo ID',
       });
     }
-
+console.log('PATCH request:', {
+  id: req.params.id,
+  body: req.body,
+});
     const todo = await updateTodoService(id, {
       text: req.body.text,
       description: req.body.description,
@@ -177,9 +162,14 @@ export const patchTodo = async (req: Request, res: Response, next: NextFunction)
     if (!todo) {
       return res.status(404).json({
         success: false,
-        error: "Todo not found",
+        error: 'Todo not found',
       });
     }
+
+    console.log('PATCH result:', {
+      id: todo?.id,
+      completed: todo?.completed,
+    });
 
     return res.status(200).json({
       success: true,
@@ -206,7 +196,7 @@ export const deleteTodo = async (req: Request, res: Response, next: NextFunction
     if (!deleted) {
       return res.status(404).json({
         success: false,
-        error: "Todo not found",
+        error: 'Todo not found',
       });
     }
 
@@ -216,11 +206,7 @@ export const deleteTodo = async (req: Request, res: Response, next: NextFunction
   }
 };
 
-export const getTodoStats = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+export const getTodoStats = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const stats = await getStats();
 
