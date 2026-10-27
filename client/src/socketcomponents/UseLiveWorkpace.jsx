@@ -40,25 +40,34 @@ export const UseLiveWorkspace = (setTasks, username = 'Guest') => {
       });
     };
 
- const onUpdated = todo => {
-   const updatedId = String(todo?.id ?? todo?._id ?? '');
+    const onUpdated = todo => {
+      const updatedId = String(todo?.id ?? todo?._id ?? '');
 
-   console.log('Получено todo:updated:', {
-     id: updatedId,
-     completed: todo?.completed,
-   });
+      console.log('Получено todo:updated:', {
+        id: updatedId,
+        completed: todo?.completed,
+      });
 
-   if (!updatedId) return;
+      if (!updatedId) return;
 
-   setTasks(previous =>
-     previous.map(task =>
-       String(task?.id ?? task?._id ?? '') === updatedId ? { ...task, ...todo } : task
-     )
-   );
- };
+      setTasks(previous =>
+        previous.map(task =>
+          String(task?.id ?? task?._id ?? '') === updatedId ? { ...task, ...todo } : task
+        )
+      );
+    };
 
-    const onDeleted = ({ id }) => {
-      setTasks(previous => previous.filter(item => String(item._id ?? item.id) !== String(id)));
+    const onDeleted = data => {
+      const deletedId = String(data?.id ?? data?._id ?? '');
+
+      if (!deletedId) {
+        console.warn('Событие удаления без ID:', data);
+        return;
+      }
+
+      setTasks(previous => previous.filter(task => getTaskId(task) !== deletedId));
+
+      console.log('🗑️ Задача удалена из списка:', deletedId);
     };
 
     socket.on('connect', joinWorkspace);
